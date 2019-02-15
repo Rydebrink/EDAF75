@@ -22,9 +22,10 @@ def format_response(d):
 
 @get('/ping')
 def get_ping():
-	s = [{'answer' : "pong"}]
 	response.status = 200
-	return format_response({"data": s})
+#	s = [{'answer' : "pong"}]
+#	return format_response({"data": s})
+	return "pong"
 
 
 @post('/reset')
@@ -71,9 +72,10 @@ def post_reset():
 		"""
 	)
 	conn.commit();
-	s = [{'answer' : "ok"}]
 	response.status = 200
-	return format_response({"data": s})
+#	s = [{'answer' : "ok"}]
+#	return format_response({"data": s})
+	return "OK"
 
 
 @get('/movies')
