@@ -11,7 +11,7 @@ PORT=7007
 
 
 def url(resource):
-    return f"http://{HOST}:{PORT}{resource}"
+    return "http://%s:%s%s" % (HOST, PORT, resource)
 
 
 def response_to_dicts(r):
@@ -19,7 +19,7 @@ def response_to_dicts(r):
 
 
 def abort(msg):
-    print(f"Error: {msg}")
+    print("Error: %s" % (msg))
     exit(1)
 
 
@@ -29,7 +29,7 @@ def check_ping():
     if r.text.strip() == 'pong':
         print("ping OK")
     else:
-        abort(f'curl -X GET {resource} does not return pong')
+        abort('curl -X GET %s does not return pong' % (resource))
 
 
 def check_reset():
@@ -38,7 +38,7 @@ def check_reset():
     if r.text.strip() == 'OK':
         print("reset OK")
     else:
-        abort(f'curl -X POST {resource} does not return OK')
+        abort('curl -X POST %s does not return OK' % (resource))
     
 
 def check_all_movies():
@@ -49,57 +49,57 @@ def check_all_movies():
         for d in found:
             title = d['title']
             year = d['year']
-            print(f"{title} ({year})")
+            print("%s (%s)" % (title, year))
         print("==============================")
     except:
-        abort(f"curl -X GET {url('/movies')} does not work")
+        abort("curl -X GET %s does not work" % (url('/movies')))
 
 
 def check_movie_title(title, year):
-    resource = url(f'/movies?title={title}&year={year}')
+    resource = url('/movies?title=%s&year=%s' % (title, year))
     try:
         r = requests.get(resource)
         found = list(response_to_dicts(r))
         if len(found) != 1:
-            abort(f"curl -X GET {resource} returns {len(found)} movies (should have been 1)")
+            abort("curl -X GET %s returns %s movies (should have been 1)" % (resource, len(found)))
         for d in found:
             assert d['title'] == title
             assert d['year'] == year
-        print(f"Could get {title} ({year}) using title and year")
+        print("Could get %s (%s) using title and year" % (title, year))
     except:
-        abort(f"curl -X GET {resource} does not work")
+        abort("curl -X GET %s does not work" % (resource))
 
 
 def check_movie_imdb(imdb_key):
-    resource = url(f'/movies/{imdb_key}')
+    resource = url('/movies/%s' % (imdb_key))
     try:
         r = requests.get(resource)
         found = list(response_to_dicts(r))
         if len(found) != 1:
-            abort(f"{resource} returns {len(found)} movies (should have been 1)")
+            abort("%s returns %s movies (should have been 1)" % (resource, len(found)))
         for d in found:
             title = d['title']
             year = d['year']
-        print(f"Could get {title} ({year}) using imdb-key")
+        print("Could get %s (%s) using imdb-key" % (title, year))
     except:
-        abort(f"curl -X GET {resource} does not work")
+        abort("curl -X GET %s does not work" % (resource))
 
 
 def add_performances(imdb, theaters, dates):
     print("======== Adding performances ========")
     for theater in theaters:
         for date in dates:
-            resource = url(f'/performances?imdb={imdb}&theater={theater}&date={date}&time=19:30')
+            resource = url('/performances?imdb=%s&theater=%s&date=%s&time=19:30' % (imdb, theater, date))
             try:
                 r = requests.post(resource)
                 m = re.search('/performances/(.+)', r.text.strip())
                 if m:
-                    print(f"{imdb} at {theater} on {date}: {m.group(1)}")
+                    print("%s at %s on %s: %s" % (imdb, theater, date, m.group(1)))
             except:
-                abort(f"curl -X POST {url} does not work")
+                abort("curl -X POST %s does not work" % (url))
     print("-------------------------------------")
     print("See tickets at:")
-    print(f"curl -GET {url('/performances')}")
+    print("curl -GET %s" % (url('/performances')))
     print("=====================================")
 
 
@@ -113,8 +113,8 @@ def buy_tickets(user_id):
             perf_id = performance['performanceId']
             seats_left = performance['remaining']
             print("================================")
-            print(f"Buying tickets to {performance['title']} on {performance['date']}")
-            buy_url = url(f'/tickets?user={user_id}&performance={perf_id}&pwd=dobido')
+            print("Buying tickets to %s on %s" % (performance['title'], performance['date']))
+            buy_url = url('/tickets?user=%s&performance=%s&pwd=dobido' % (user_id, perf_id))
             print("--------------------------------")
             print(buy_url)
             print("--------------------------------")
@@ -135,12 +135,12 @@ def buy_tickets(user_id):
 
 def see_tickets(user_id):
     try:
-        resource = url(f'/customers/{user_id}/tickets')
-        print(f"curl -X GET {resource}")
+        resource = url('/customers/%s/tickets' % (user_id))
+        print("curl -X GET %s" % (resource))
         r = requests.get(resource)
         print(r.text)
     except:
-        abort(f"Could not see the tickets bought by {user_id}")
+        abort("Could not see the tickets bought by %s" % (user_id))
 
 
 def main():
