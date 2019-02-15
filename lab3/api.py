@@ -76,7 +76,7 @@ def post_reset():
 	return format_response({"data": s})
 
 
-@get('/films')
+@get('/movies')
 def get_films():
 	response.content_type = 'application/json'
 	query =	"""
@@ -100,6 +100,20 @@ def get_films():
 		for (imdb_key, title, year) in c]
 	return format_response({"data": s})
 
-
+@get('/movies/<imdb_key>')
+def get_film(imdb_key):
+    response.content_type = 'application/json'
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT imdb_key, title, year
+        FROM   films
+        WHERE  imdb_key = ?
+        """,
+        [imdb_key]
+    )
+    s = [{"imdbKey": imdb_key, "title": title, "year": year}
+		for (imdb_key, title, year) in c]
+    return format_response({"data": s})
 
 run(host=HOST, port=PORT, debug=True)

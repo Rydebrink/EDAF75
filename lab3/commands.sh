@@ -1,14 +1,12 @@
 #!/bin/bash
 #Tested:
-curl -X GET http://localhost:7007/films
 curl -X GET http://localhost:7007/ping
 curl -X POST http://localhost:7007/reset
-curl -X GET http://localhost:7007/films
-curl -X GET http://localhost:7007/films\?title=Spotlight\&year=2015
+curl -X GET http://localhost:7007/movies
+curl -X GET http://localhost:7007/movies\?title=Spotlight\&year=2015
+curl -X GET http://localhost:7007/movies/tt5580390
 
 #Untested:
-#curl -X GET http://localhost:7007/films/<imdb-key>
-#curl -X GET http://localhost:7007/films/tt5580390
 #curl -X POST http://localhost:7007/performances\?imdb=<imdb>\&theatre=<theatre>\&date=<date>\&time=<time>
 #curl -X POST http://localhost:7007/performances\?imdb=tt5580390\&theatre=Kino\&date=2019-02-22\&time=19:00
 #curl -X GET http://localhost:7007/performances
