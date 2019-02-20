@@ -1,0 +1,7 @@
+1. Öppna två terminaler
+2. I terminal A kör:
+		python api.py
+3. I terminal B kör:
+		python3 check-lab3.py
+	eller
+		./command.sh
