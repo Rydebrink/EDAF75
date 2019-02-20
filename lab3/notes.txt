@@ -4,4 +4,4 @@
 3. I terminal B kör:
 		python3 check-lab3.py
 	eller
-		./command.sh
+		./requests.sh

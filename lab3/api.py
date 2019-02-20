@@ -20,6 +20,38 @@ def format_response(d):
     return json.dumps(d, indent=4) + "\n"
 
 
+def imdb_key_exists(key):
+	response.content_type = 'application/json'
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT imdb_key, title, year
+		FROM   films
+		WHERE  imdb_key = ?
+		""",
+		[key]
+	)
+	if c.fetchone() is not None:
+		return True
+	else:
+		return False
+
+def theater_exists(key):
+	response.content_type = 'application/json'
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT t_name
+		FROM   theatres
+		WHERE  t_name = ?
+		""",
+		[key]
+	)
+	if c.fetchone() is not None:
+		return True
+	else:
+		return False
+
 @get('/ping')
 def get_ping():
 	response.status = 200
@@ -102,20 +134,67 @@ def get_films():
 		for (imdb_key, title, year) in c]
 	return format_response({"data": s})
 
+
 @get('/movies/<imdb_key>')
 def get_film(imdb_key):
-    response.content_type = 'application/json'
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT imdb_key, title, year
-        FROM   films
-        WHERE  imdb_key = ?
-        """,
-        [imdb_key]
-    )
-    s = [{"imdbKey": imdb_key, "title": title, "year": year}
+	response.content_type = 'application/json'
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT imdb_key, title, year
+		FROM   films
+		WHERE  imdb_key = ?
+		""",
+		[imdb_key]
+	)
+	s = [{"imdbKey": imdb_key, "title": title, "year": year}
 		for (imdb_key, title, year) in c]
-    return format_response({"data": s})
+#	if c.rowcount > 0:
+#		response.status = 200
+#	else:
+#		response.status = 404
+	return format_response({"data": s})
+
+
+@post('/performances')
+def post_performance():
+	response.content_type = 'application/json'
+	query =	"""
+		INSERT
+		INTO performances(imdb_key, t_name, date, time)
+		VALUES (?, ?, ?, ?);
+		"""
+	params = []
+	if request.query.imdb and request.query.theater and request.query.date and request.query.time:
+		if imdb_key_exists(request.query.imdb) and theater_exists(request.query.theater):
+			params.append(request.query.imdb)
+			params.append(request.query.theater)
+			params.append(request.query.date)
+			params.append(request.query.time)
+		else:
+			response.status = 400
+			return format_response({"error": "No such movie or theater"})
+	else:
+		response.status = 400
+		return format_response({"error": "Missing parameter"})
+
+	c = conn.cursor()
+	c.execute(
+		query,
+		params
+	)
+	c = conn.cursor()
+	conn.commit()
+	c.execute(
+        """
+        SELECT   p_id
+        FROM     performances
+        WHERE    rowid = last_insert_rowid()
+        """
+    )
+	p_id = c.fetchone()[0]
+	response.status = 200
+	return "/performances/%s" % (p_id)
+
 
 run(host=HOST, port=PORT, debug=True)
