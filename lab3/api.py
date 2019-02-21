@@ -20,8 +20,7 @@ def format_response(d):
     return json.dumps(d, indent=4) + "\n"
 
 
-def imdb_key_exists(key):
-	response.content_type = 'application/json'
+def get_film_by_key(imdb_key):
 	c = conn.cursor()
 	c.execute(
 		"""
@@ -29,12 +28,16 @@ def imdb_key_exists(key):
 		FROM   films
 		WHERE  imdb_key = ?
 		""",
-		[key]
+		[imdb_key]
 	)
-	if c.fetchone() is not None:
-		return True
-	else:
-		return False
+	return c
+
+
+def imdb_key_exists(key):
+	response.content_type = 'application/json'
+	c = get_film_by_key(key)
+	return c.fetchone() is not None
+
 
 def theater_exists(key):
 	response.content_type = 'application/json'
@@ -47,10 +50,7 @@ def theater_exists(key):
 		""",
 		[key]
 	)
-	if c.fetchone() is not None:
-		return True
-	else:
-		return False
+	return c.fetchone() is not None
 
 def performance_exists(p_id):
 	response.content_type = 'application/json'
@@ -112,9 +112,6 @@ def tickets_left(p_id):
 
 @get('/ping')
 def get_ping():
-	response.status = 200
-#	s = [{'answer' : "pong"}]
-#	return format_response({"data": s})
 	return "pong"
 
 
@@ -161,10 +158,7 @@ def post_reset():
 				('Skandia', 100);
 		"""
 	)
-	conn.commit();
-	response.status = 200
-#	s = [{'answer' : "ok"}]
-#	return format_response({"data": s})
+	conn.commit()
 	return "OK"
 
 
@@ -196,21 +190,12 @@ def get_films():
 @get('/movies/<imdb_key>')
 def get_film(imdb_key):
 	response.content_type = 'application/json'
-	c = conn.cursor()
-	c.execute(
-		"""
-		SELECT imdb_key, title, year
-		FROM   films
-		WHERE  imdb_key = ?
-		""",
-		[imdb_key]
-	)
+	c = get_film_by_key(imdb_key)
 	s = [{"imdbKey": imdb_key, "title": title, "year": year}
 		for (imdb_key, title, year) in c]
-#	if c.rowcount > 0:
-#		response.status = 200
-#	else:
-#		response.status = 404
+	# Set status code
+	if len(s) < 1:
+		response.status = 404
 	return format_response({"data": s})
 
 
@@ -231,10 +216,10 @@ def post_performance():
 			params.append(request.query.time)
 		else:
 			response.status = 400
-			return format_response({"error": "No such movie or theater"})
+			return "No such movie or theater"
 	else:
 		response.status = 400
-		return format_response({"error": "Missing parameter"})
+		return "Missing parameter"
 
 	c = conn.cursor()
 	c.execute(
@@ -271,7 +256,7 @@ def get_performances():
 		GROUP BY p_id
 		"""
 	)
-	s = [{"performanceId": p_id, "date": date, "startTime": time, "title" : title, "year" : year, "theater" : t_name, "remaingingSeats" : remaining_seats}
+	s = [{"performanceId": p_id, "date": date, "startTime": time, "title" : title, "year" : year, "theater" : t_name, "remaining" : remaining_seats}
 		for (p_id, date, time, title, year, t_name, remaining_seats) in c]
 	return format_response({"data": s})
 
@@ -281,16 +266,16 @@ def post_tickets():
 	params = []
 	if not (request.query.user and request.query.performance and request.query.pwd):
 		response.status = 400
-		return format_response({"error": "Missing parameter"})
+		return "Missing parameter"
 	elif not (performance_exists(request.query.performance) and user_exists(request.query.user)):
 		response.status = 400
-		return format_response({"error": "No such performance or user"})
+		return "No such performance or user"
 	elif not check_password(request.query.user, request.query.pwd):
 		response.status = 401
-		return format_response({"error": "Wrong password"})
+		return "Wrong password"
 	elif not tickets_left(request.query.performance):
 		response.status = 403
-		return format_response({"error": "No tickets left"})
+		return "No tickets left"
 	else:
 		params.append(request.query.performance)
 		params.append(request.query.user)
@@ -308,14 +293,14 @@ def post_tickets():
 	conn.commit()
 	c.execute(
         """
-        SELECT   p_id
+        SELECT   t_id
         FROM     tickets
         WHERE    rowid = last_insert_rowid()
         """
     )
-	p_id = c.fetchone()[0]
+	t_id = c.fetchone()[0]
 	response.status = 200
-	return "/performances/%s" % (p_id)
+	return "/tickets/%s" % (t_id)
 
 
 run(host=HOST, port=PORT, debug=True)

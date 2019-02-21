@@ -127,7 +127,7 @@ def buy_tickets(user_id):
             # now fail once:
             r = requests.post(buy_url)
             if not r.text.strip() == "No tickets left":
-                abort("Could by too many tickets")
+                abort("Could buy too many tickets")
         print("================================")
     except:
         abort('Got error when trying to buy tickets')
