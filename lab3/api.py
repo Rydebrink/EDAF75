@@ -52,6 +52,64 @@ def theater_exists(key):
 	else:
 		return False
 
+def performance_exists(p_id):
+	response.content_type = 'application/json'
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT p_id
+		FROM   performances
+		WHERE  p_id = ?
+		""",
+		[p_id]
+	)
+	result = c.fetchone()
+	return result is not None
+
+def user_exists(user_name):
+	response.content_type = 'application/json'
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT user_name
+		FROM   customers
+		WHERE  user_name = ?
+		""",
+		[user_name]
+	)
+	result = c.fetchone()
+	return result is not None
+
+def check_password(user, pwd):
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT password
+		FROM   customers
+		WHERE  user_name= ?
+		""",
+		[user]
+	)
+	result = c.fetchone()
+	return result is not None and result[0] == hash(pwd)
+
+def tickets_left(p_id):
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT (capacity - count(t_id))
+		FROM   performances
+		JOIN   theatres
+		USING  (t_name)
+		LEFT JOIN tickets
+		USING  (p_id)
+		WHERE  p_id = ?
+		""",
+		[p_id]
+	)
+	return c.fetchone()[0]
+
+
 @get('/ping')
 def get_ping():
 	response.status = 200
@@ -183,7 +241,6 @@ def post_performance():
 		query,
 		params
 	)
-	c = conn.cursor()
 	conn.commit()
 	c.execute(
         """
@@ -203,7 +260,7 @@ def get_performances():
 	c = conn.cursor()
 	c.execute(
 		"""
-		SELECT p_id, date, time, title, year, t_name, (capacity - count()) AS remaining_seats
+		SELECT p_id, date, time, title, year, t_name, (capacity - count(t_id)) AS remaining_seats
 		FROM   performances
 		JOIN   films
 		USING  (imdb_key)
@@ -217,6 +274,48 @@ def get_performances():
 	s = [{"performanceId": p_id, "date": date, "startTime": time, "title" : title, "year" : year, "theater" : t_name, "remaingingSeats" : remaining_seats}
 		for (p_id, date, time, title, year, t_name, remaining_seats) in c]
 	return format_response({"data": s})
+
+
+@post('/tickets')
+def post_tickets():
+	params = []
+	if not (request.query.user and request.query.performance and request.query.pwd):
+		response.status = 400
+		return format_response({"error": "Missing parameter"})
+	elif not (performance_exists(request.query.performance) and user_exists(request.query.user)):
+		response.status = 400
+		return format_response({"error": "No such performance or user"})
+	elif not check_password(request.query.user, request.query.pwd):
+		response.status = 401
+		return format_response({"error": "Wrong password"})
+	elif not tickets_left(request.query.performance):
+		response.status = 403
+		return format_response({"error": "No tickets left"})
+	else:
+		params.append(request.query.performance)
+		params.append(request.query.user)
+	c = conn.cursor()
+	response.content_type = 'application/json'
+	query =	"""
+		INSERT
+		INTO tickets(p_id, user_name)
+		VALUES (?, ?);
+		"""
+	c.execute(
+		query,
+		params
+	)
+	conn.commit()
+	c.execute(
+        """
+        SELECT   p_id
+        FROM     tickets
+        WHERE    rowid = last_insert_rowid()
+        """
+    )
+	p_id = c.fetchone()[0]
+	response.status = 200
+	return "/performances/%s" % (p_id)
 
 
 run(host=HOST, port=PORT, debug=True)
