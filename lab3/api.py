@@ -197,4 +197,26 @@ def post_performance():
 	return "/performances/%s" % (p_id)
 
 
+@get('/performances')
+def get_performances():
+	response.content_type = 'application/json'
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT p_id, date, time, title, year, t_name, (capacity - count()) AS remaining_seats
+		FROM   performances
+		JOIN   films
+		USING  (imdb_key)
+		JOIN   theatres
+		USING  (t_name)
+		LEFT JOIN tickets
+		USING  (p_id)
+		GROUP BY p_id
+		"""
+	)
+	s = [{"performanceId": p_id, "date": date, "startTime": time, "title" : title, "year" : year, "theater" : t_name, "remaingingSeats" : remaining_seats}
+		for (p_id, date, time, title, year, t_name, remaining_seats) in c]
+	return format_response({"data": s})
+
+
 run(host=HOST, port=PORT, debug=True)
