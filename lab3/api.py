@@ -303,4 +303,30 @@ def post_tickets():
 	return "/tickets/%s" % (t_id)
 
 
+@get('/customers/<user_name>/tickets')
+def get_tickets(user_name):
+	print("user_name = %s" % (user_name))
+	if not user_exists(user_name):
+		response.status = 404
+		return "User not found"
+	response.content_type = 'application/json'
+	c = conn.cursor()
+	c.execute(
+		"""
+		SELECT   date, time, t_name, title, year, count() AS nbr_of_tickets
+		FROM     tickets
+		JOIN     performances
+		USING    (p_id)
+		JOIN     films
+		USING    (imdb_key)
+		WHERE    user_name = ?
+		GROUP BY p_id;
+		""",
+		[user_name]
+	)
+	s = [{"date": date, "startTime": time, "theater" : t_name, "title" : title, "year" : year, "nbrOfTickets" : nbr_of_tickets}
+		for (date, time, t_name, title, year, nbr_of_tickets) in c]
+	return format_response({"data": s})
+
+
 run(host=HOST, port=PORT, debug=True)
