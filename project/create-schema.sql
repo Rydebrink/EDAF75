@@ -20,7 +20,7 @@ CREATE TABLE ingredients (
   name         TEXT,
   amount       INT,
   recipe_name  TEXT,
-  PRIMARY KEY  (name),
+  PRIMARY KEY  (name, recipe_name),
   FOREIGN KEY  (recipe_name) REFERENCES recipes(name)
 );
 
