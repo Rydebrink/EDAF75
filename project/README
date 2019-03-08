@@ -1,0 +1,13 @@
+TODO
+1. Möte; ev. dela upp projektet i deluppifter
+2. Flytta projektet till gitlab
+3. Implementera stöd för:
+  curl -X POST http://localhost:8888/reset
+  curl -X GET http://localhost:8888/customers
+  curl -X GET http://localhost:8888/ingredients
+  curl -X GET http://localhost:8888/cookies
+  curl -X GET http://localhost:8888/recipes
+  curl -X GET http://localhost:8888/pallets (optional parameters: after, before, cookie, blocked)
+  curl -X POST http://localhost:8888/pallets\?cookie\=<cookie-name>
+  curl -X POST http://localhost:8888/block/<cookie-name>/<from-date>/<to-date>
+  curl -X POST http://localhost:8888/unblock/<cookie-name>/<from-date>/<to-date>
