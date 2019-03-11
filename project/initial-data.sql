@@ -8,7 +8,12 @@ DELETE FROM raw_material_transactions;
 
 INSERT
 INTO   recipes(name)
-VALUES ('Tango');
+VALUES ('Tango'),
+       ('Nut ring'),
+       ('Amneris'),
+       ('Nut cookie'),
+       ('Almond delight'),
+       ('Berliner');
 
 
 INSERT
